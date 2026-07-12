@@ -13,7 +13,17 @@ export type MaintenanceStatus = "active" | "closed";
 // Fuel log type enum
 export type FuelLogType = "fuel" | "toll" | "misc";
 
+// User role enum
+export type UserRole = "fleet_manager" | "driver" | "safety_officer" | "financial_analyst";
+
 // Database row types
+export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  created_at: string;
+}
+
 export interface Vehicle {
   id: string;
   registration_number: string;

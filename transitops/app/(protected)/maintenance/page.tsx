@@ -2,9 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/status-badge";
 import { MaintenanceFormDialog } from "./maintenance-form-dialog";
 import { MaintenanceActions } from "./maintenance-actions";
+import { getUserRole } from "@/lib/actions/auth";
 
 export default async function MaintenancePage() {
   const supabase = await createClient();
+  const role = await getUserRole();
+  const isManager = role === "fleet_manager";
 
   const { data: logs } = await supabase
     .from("maintenance_logs")
@@ -26,7 +29,7 @@ export default async function MaintenancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Maintenance</h1>
-        <MaintenanceFormDialog vehicles={availableVehicles || []} />
+        {isManager && <MaintenanceFormDialog vehicles={availableVehicles || []} />}
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">

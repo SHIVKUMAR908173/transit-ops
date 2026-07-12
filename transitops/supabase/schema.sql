@@ -161,3 +161,31 @@ begin
   end if;
 end;
 $$ language plpgsql;
+
+-- RBAC (User Profiles)
+create table user_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  role text not null default 'fleet_manager'
+    check (role in ('fleet_manager', 'driver', 'safety_officer', 'financial_analyst')),
+  created_at timestamptz default now()
+);
+
+alter table user_profiles enable row level security;
+create policy "allow all authenticated" on user_profiles for all using (true);
+
+-- Trigger to auto-create profile on signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.user_profiles (id, email, role)
+  values (new.id, new.email, 'fleet_manager'); -- Defaulting to fleet_manager for MVP
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Drop trigger if exists to allow re-running
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

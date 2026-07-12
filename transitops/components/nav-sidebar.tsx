@@ -9,6 +9,8 @@ import {
   Route,
   Wrench,
   LogOut,
+  Fuel,
+  BarChart,
 } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 
@@ -18,6 +20,8 @@ const navItems = [
   { href: "/drivers", label: "Drivers", icon: Users },
   { href: "/trips", label: "Trips", icon: Route },
   { href: "/maintenance", label: "Maintenance", icon: Wrench },
+  { href: "/fuel", label: "Fuel & Expenses", icon: Fuel },
+  { href: "/reports", label: "Reports", icon: BarChart },
 ];
 
 export function NavSidebar() {

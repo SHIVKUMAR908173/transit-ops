@@ -1,8 +1,34 @@
 import { createClient } from "@/lib/supabase/server";
 import { KpiCard } from "@/components/kpi-card";
+import { DashboardFilters } from "./dashboard-filters";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const supabase = await createClient();
+
+  // Await searchParams in Next.js 15+ if needed, but since it's an object, we can just access it. Wait, Next.js 15 requires awaiting searchParams. Let's do it safely for future compatibility.
+  const params = await Promise.resolve(searchParams);
+  const typeFilter = typeof params.type === 'string' ? params.type : undefined;
+  const statusFilter = typeof params.status === 'string' ? params.status : undefined;
+
+  // Base queries
+  let vTotal = supabase.from("vehicles").select("*", { count: "exact", head: true }).not("status", "eq", "retired");
+  let vAvail = supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "available");
+  let vTrip = supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "on_trip");
+  let vShop = supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "in_shop");
+
+  // Apply filters
+  if (typeFilter) {
+    vTotal = vTotal.eq("type", typeFilter);
+    vAvail = vAvail.eq("type", typeFilter);
+    vTrip = vTrip.eq("type", typeFilter);
+    vShop = vShop.eq("type", typeFilter);
+  }
+  if (statusFilter) {
+    vTotal = vTotal.eq("status", statusFilter);
+    vAvail = vAvail.eq("status", statusFilter);
+    vTrip = vTrip.eq("status", statusFilter);
+    vShop = vShop.eq("status", statusFilter);
+  }
 
   // Fetch all counts in parallel
   const [
@@ -15,12 +41,12 @@ export default async function DashboardPage() {
     { count: driversOnDuty },
     { count: totalDrivers },
   ] = await Promise.all([
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).not("status", "eq", "retired"),
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "available"),
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "on_trip"),
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "in_shop"),
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "dispatched"),
-    supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("status", "draft"),
+    vTotal,
+    vAvail,
+    vTrip,
+    vShop,
+    supabase.from("trips").select("*", { count: "exact", head: true }).eq("status", "dispatched"),
+    supabase.from("trips").select("*", { count: "exact", head: true }).eq("status", "draft"),
     supabase.from("drivers").select("*", { count: "exact", head: true }).eq("status", "on_trip"),
     supabase.from("drivers").select("*", { count: "exact", head: true }).not("status", "eq", "suspended"),
   ]);
@@ -31,16 +57,19 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Fleet operations at a glance.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Fleet operations at a glance.
+          </p>
+        </div>
+        <DashboardFilters />
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <KpiCard title="Active Vehicles" value={total} />
+        <KpiCard title={typeFilter ? `Active ${typeFilter}s` : "Active Vehicles"} value={total} />
         <KpiCard title="Available Vehicles" value={availableVehicles ?? 0} />
         <KpiCard title="Vehicles in Maintenance" value={inShopVehicles ?? 0} />
         <KpiCard title="Active Trips" value={activeTrips ?? 0} />

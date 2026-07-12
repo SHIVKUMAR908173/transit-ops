@@ -49,15 +49,21 @@ Key columns to remember:
 - `drivers.status`: available / on_trip / off_duty / suspended
 - `trips.status`: draft / dispatched / completed / cancelled
 
-## Current Status
-- Done: All code files for Phases 0–4 created ✅
-- Build passes: TypeScript compilation + Next.js build successful ✅
-- Done: Schema setup and test user creation in Supabase ✅
-- Tested end-to-end: all CRUD flows, dispatch engine, dashboard KPIs verified ✅
-- Done: Vercel deployment and GitHub pushing (Phase 6) ✅
+## PRD Audit Status
+| Requirement | Status | Notes |
+|---|---|---|
+| **Auth & RBAC** | Partial | Email/password login and Google Auth built. **RBAC (Roles) is missing** from DB schema and UI. |
+| **Dashboard KPIs** | Partial | Core KPIs (Active Vehicles, etc.) are built. **Filters** (by vehicle type/status/region) are missing. |
+| **Vehicle Registry** | Done | CRUD built. Unique Reg Enforced. Status tracking works. |
+| **Driver Management** | Done | CRUD built. Safety scores and license expiry tracked. |
+| **Trip Management** | Done | CRUD built. Atomic lifecycle state changes via RPC work. |
+| **Maintenance** | Done | Auto-sets vehicles to "In Shop" and removes from pool. |
+| **Fuel & Expense** | Partial | `fuel_logs` table exists in DB. **UI is completely missing**. |
+| **Reports & Analytics** | Not Started | No analytics views or CSV export feature built. |
+| **Business Rules** | Done | Dispatch engine blocks double booking and enforces statuses accurately. |
 
 ## Active Task
-The project is completely finished, tested, and deployed to Vercel at https://transit-ops-sigma.vercel.app. Ready for the hackathon demo!
+Waiting for user approval to begin implementing the missing high-priority PRD features (RBAC, Fuel UI, Dashboard Filters, Analytics).
 
 ## Do Not Touch
 - `lib/supabase/client.ts` / `server.ts` — auth wiring follows Supabase SSR docs exactly.
