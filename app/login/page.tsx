@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn, signUp } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,14 @@ export default function LoginPage() {
       <div className="hidden lg:flex w-1/2 bg-gray-900 text-white flex-col justify-between p-12">
         <div>
           <div className="flex items-center gap-3 mb-12">
-            <img src="/logo.png" alt="TransitOps Logo" className="h-16 w-auto object-contain bg-white px-3 py-2 rounded-lg shadow-lg" />
+            <Image 
+              src="/logo.png" 
+              alt="TransitOps Logo" 
+              width={160} 
+              height={64} 
+              className="h-16 w-auto object-contain bg-white px-3 py-2 rounded-lg shadow-lg" 
+              priority
+            />
           </div>
           <h1 className="text-5xl font-semibold leading-tight tracking-tight mt-24">
             Intelligent Fleet <br/> Operations Platform

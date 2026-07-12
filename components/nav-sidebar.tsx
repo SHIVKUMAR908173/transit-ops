@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -32,7 +33,14 @@ export function NavSidebar() {
       {/* Logo */}
       <div className="px-4 py-5 border-b border-gray-200">
         <Link href="/dashboard" className="flex items-center justify-center">
-          <img src="/logo.png" alt="TransitOps Logo" className="h-12 w-auto object-contain" />
+          <Image 
+            src="/logo.png" 
+            alt="TransitOps Logo" 
+            width={160} 
+            height={36} 
+            className="h-9 w-auto object-contain" 
+            priority
+          />
         </Link>
       </div>
 

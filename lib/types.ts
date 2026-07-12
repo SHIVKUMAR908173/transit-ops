@@ -58,6 +58,7 @@ export interface Trip {
   planned_distance_km: number | null;
   actual_distance_km: number | null;
   fuel_consumed_l: number | null;
+  revenue: number | null;
   status: TripStatus;
   created_at: string;
   completed_at: string | null;

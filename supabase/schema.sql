@@ -43,6 +43,7 @@ create table trips (
   planned_distance_km numeric,
   actual_distance_km numeric,
   fuel_consumed_l numeric,
+  revenue numeric,
   status text not null default 'draft'
     check (status in ('draft', 'dispatched', 'completed', 'cancelled')),
   created_at timestamptz default now(),
@@ -69,7 +70,8 @@ create table fuel_logs (
   type text not null default 'fuel' check (type in ('fuel', 'toll', 'misc')),
   liters numeric,
   cost numeric not null,
-  log_date date default current_date
+  log_date date default current_date,
+  created_at timestamptz default now()
 );
 
 -- RLS: enabled but permissive for the hackathon window
