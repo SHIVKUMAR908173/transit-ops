@@ -48,9 +48,9 @@ export default function LoginPage() {
             <Image 
               src="/logo.png" 
               alt="TransitOps Logo" 
-              width={160} 
-              height={64} 
-              className="h-16 w-auto object-contain bg-white px-3 py-2 rounded-lg shadow-lg" 
+              width={240} 
+              height={96} 
+              className="h-24 w-auto object-contain bg-white px-4 py-3 rounded-xl shadow-xl" 
               priority
             />
           </div>
