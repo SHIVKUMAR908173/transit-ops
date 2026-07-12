@@ -1,6 +1,9 @@
 -- TransitOps Dummy Data Seed
 -- Run this in the Supabase SQL editor to populate your database with fake data
 
+-- Ensure the revenue column exists (in case you created the tables before the schema was updated)
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS revenue numeric;
+
 -- 1. Insert Dummy Vehicles
 INSERT INTO vehicles (registration_number, name, type, max_load_kg, odometer, acquisition_cost, status) VALUES
 ('TRK-001', 'Volvo FH16', 'Heavy Truck', 25000, 120500, 150000, 'available'),
