@@ -1,20 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "@/lib/actions/auth";
+import { signIn, signUp } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
-    const result = await signIn(formData);
+    const result = isSignUp ? await signUp(formData) : await signIn(formData);
     if (result?.error) {
-      setError(result.error);
+      setError(result?.error);
       setLoading(false);
     }
   }
@@ -76,9 +77,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8">
           
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">Welcome back</h2>
+            <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
+              {isSignUp ? "Create an account" : "Welcome back"}
+            </h2>
             <p className="mt-2 text-sm text-gray-500">
-              Please enter your details to access your dashboard.
+              {isSignUp 
+                ? "Enter your details to create your TransitOps account." 
+                : "Please enter your details to access your dashboard."}
             </p>
           </div>
 
@@ -98,7 +103,9 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-center gap-4">
             <div className="h-px bg-gray-200 flex-1"></div>
-            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Or log in with email</span>
+            <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+              Or {isSignUp ? "sign up" : "log in"} with email
+            </span>
             <div className="h-px bg-gray-200 flex-1"></div>
           </div>
 
@@ -164,10 +171,23 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-gray-900 text-white hover:bg-gray-800 rounded-lg px-4 py-3 text-sm font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              {loading ? "Signing in..." : "Sign in to Dashboard"}
+              {loading ? (isSignUp ? "Creating account..." : "Signing in...") : (isSignUp ? "Create Account" : "Sign in to Dashboard")}
             </button>
           </form>
 
+          <p className="text-center text-sm text-gray-500 mt-6">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+              }}
+              className="text-gray-900 font-medium hover:underline focus:outline-none"
+            >
+              {isSignUp ? "Log in" : "Sign up"}
+            </button>
+          </p>
         </div>
       </div>
     </div>
