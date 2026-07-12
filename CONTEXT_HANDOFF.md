@@ -9,7 +9,7 @@ TransitOps is a fleet operations platform, vehicle/driver registry, trip dispatc
 - Zod v4.4.3 (note: NOT Zod 3, API differs — use `.issues` not `.errors`, no `invalid_type_error` param)
 - Supabase (URL: `https://jjvnnewoiupnrvupmugd.supabase.co`, anon key in `.env.local`)
 - Next 16 uses `proxy.ts` instead of `middleware.ts` — function must be named `proxy` not `middleware`
-- Deployed on Vercel at: `[NOT YET DEPLOYED]`
+- Deployed on Vercel at: `https://transit-ops-beige.vercel.app`
 
 ## Folder Structure
 ```
@@ -54,10 +54,10 @@ Key columns to remember:
 - Build passes: TypeScript compilation + Next.js build successful ✅
 - Done: Schema setup and test user creation in Supabase ✅
 - Tested end-to-end: all CRUD flows, dispatch engine, dashboard KPIs verified ✅
-- Not started: Vercel deployment and GitHub pushing (Phase 6)
+- Done: Vercel deployment and GitHub pushing (Phase 6) ✅
 
 ## Active Task
-The end-to-end test flow is complete and all core requirements are verified working locally on port 3000. Next step is pushing to GitHub and deploying to Vercel.
+The project is completely finished, tested, and deployed to Vercel at https://transit-ops-beige.vercel.app. Ready for the hackathon demo!
 
 ## Do Not Touch
 - `lib/supabase/client.ts` / `server.ts` — auth wiring follows Supabase SSR docs exactly.
