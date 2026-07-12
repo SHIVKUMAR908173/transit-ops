@@ -60,15 +60,27 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex bg-white">
       {/* Left Panel - Branding (Hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 bg-gray-900 text-white flex-col justify-between p-12">
-        <div>
+      <div className="hidden lg:flex w-1/2 bg-gray-900 text-white flex-col justify-between p-12 relative overflow-hidden">
+        
+        {/* Background Watermark Logo */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center scale-150 transform">
+          <Image
+            src="/logo.png"
+            alt="Background Watermark"
+            width={800}
+            height={800}
+            className="object-contain"
+          />
+        </div>
+
+        <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
             <Image
               src="/logo.png"
               alt="TransitOps Logo"
-              width={160}
-              height={64}
-              className="h-16 w-auto object-contain bg-white px-3 py-2 rounded-lg shadow-lg"
+              width={240}
+              height={96}
+              className="h-24 w-auto object-contain bg-white px-4 py-3 rounded-xl shadow-xl"
               priority
             />
           </div>
