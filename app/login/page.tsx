@@ -80,17 +80,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="border-t border-gray-800 pt-8 mt-12">
-          <blockquote className="text-base text-gray-400 italic">
-            &ldquo;TransitOps transformed our dispatch pipeline. We cut down dispatch errors to zero within the first week.&rdquo;
-            <footer className="mt-4 text-gray-300 font-medium not-italic flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-gray-300">
-                LD
-              </div>
-              Logistics Director, Acme Freight
-            </footer>
-          </blockquote>
-        </div>
+
       </div>
 
       {/* Right Panel - Login Form */}
