@@ -19,7 +19,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    return { error: "Invalid credentials. Please try again." };
+    return { error: error.message };
   }
 
   redirect("/dashboard");
