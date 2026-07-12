@@ -44,12 +44,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex w-1/2 bg-gray-900 text-white flex-col justify-between p-12">
         <div>
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-2xl font-bold tracking-tight">TransitOps</span>
+            <img src="/logo.png" alt="TransitOps Logo" className="h-16 w-auto object-contain bg-white px-3 py-2 rounded-lg shadow-lg" />
           </div>
           <h1 className="text-5xl font-semibold leading-tight tracking-tight mt-24">
             Intelligent Fleet <br/> Operations Platform

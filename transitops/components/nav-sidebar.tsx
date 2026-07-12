@@ -27,9 +27,9 @@ export function NavSidebar() {
     <aside className="bg-white border-r border-gray-200 w-56 h-screen flex flex-col fixed left-0 top-0 z-30">
       {/* Logo */}
       <div className="px-4 py-5 border-b border-gray-200">
-        <h1 className="text-lg font-semibold text-gray-900">
-          TransitOps
-        </h1>
+        <Link href="/dashboard" className="flex items-center justify-center">
+          <img src="/logo.png" alt="TransitOps Logo" className="h-12 w-auto object-contain" />
+        </Link>
       </div>
 
       {/* Nav items */}
