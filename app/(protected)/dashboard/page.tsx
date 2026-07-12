@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { KpiCard } from "@/components/kpi-card";
 import { DashboardFilters } from "./dashboard-filters";
+import { Suspense } from "react";
 
-export default async function DashboardPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const supabase = await createClient();
 
-  // Await searchParams in Next.js 15+ if needed, but since it's an object, we can just access it. Wait, Next.js 15 requires awaiting searchParams. Let's do it safely for future compatibility.
-  const params = await Promise.resolve(searchParams);
+  // In Next.js 15+/16, searchParams is a Promise and must be awaited
+  const params = await searchParams;
   const typeFilter = typeof params.type === 'string' ? params.type : undefined;
   const statusFilter = typeof params.status === 'string' ? params.status : undefined;
 
@@ -64,7 +65,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
             Fleet operations at a glance.
           </p>
         </div>
-        <DashboardFilters />
+        <Suspense fallback={<div className="h-16 bg-gray-50 rounded-lg animate-pulse" />}>
+          <DashboardFilters />
+        </Suspense>
       </div>
 
       {/* KPI row */}

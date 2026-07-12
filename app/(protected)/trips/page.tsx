@@ -3,12 +3,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { TripFormDialog } from "./trip-form-dialog";
 import { TripActions } from "./trip-actions";
 
-import { getUserRole } from "@/lib/actions/auth";
-
 export default async function TripsPage() {
   const supabase = await createClient();
-  const role = await getUserRole();
-  const isManager = role === "fleet_manager";
 
   const { data: trips } = await supabase
     .from("trips")
@@ -38,12 +34,10 @@ export default async function TripsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Trips</h1>
-        {isManager && (
-          <TripFormDialog
-            vehicles={availableVehicles || []}
-            drivers={availableDrivers || []}
-          />
-        )}
+        <TripFormDialog
+          vehicles={availableVehicles || []}
+          drivers={availableDrivers || []}
+        />
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">

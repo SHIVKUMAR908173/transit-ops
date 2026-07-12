@@ -6,16 +6,7 @@ import { VehicleFormDialog } from "./vehicle-form-dialog";
 export default async function VehiclesPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("role")
-    .eq("id", user?.id)
-    .single();
-
-  const isManager = profile?.role === "fleet_manager";
-
-  const { data: vehicles, error } = await supabase
+  const { data: vehicles } = await supabase
     .from("vehicles")
     .select("*")
     .order("created_at", { ascending: false });
@@ -26,7 +17,7 @@ export default async function VehiclesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Vehicles</h1>
-        {isManager && <VehicleFormDialog />}
+        <VehicleFormDialog />
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">

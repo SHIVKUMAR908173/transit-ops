@@ -39,7 +39,8 @@ export async function proxy(request: NextRequest) {
 
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith("/login")
+    !request.nextUrl.pathname.startsWith("/login") &&
+    !request.nextUrl.pathname.startsWith("/auth")
   ) {
     // No user, redirect to login
     const url = request.nextUrl.clone();

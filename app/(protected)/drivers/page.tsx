@@ -2,12 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Driver } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 import { DriverFormDialog } from "./driver-form-dialog";
-import { getUserRole } from "@/lib/actions/auth";
 
 export default async function DriversPage() {
   const supabase = await createClient();
-  const role = await getUserRole();
-  const isManager = role === "fleet_manager";
 
   const { data: drivers } = await supabase
     .from("drivers")
@@ -20,7 +17,7 @@ export default async function DriversPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Drivers</h1>
-        {isManager && <DriverFormDialog />}
+        <DriverFormDialog />
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">

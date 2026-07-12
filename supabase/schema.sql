@@ -1,11 +1,11 @@
 -- TransitOps Database Schema
--- Run this once in the Supabase SQL editor
+-- Safe to re-run: uses IF NOT EXISTS and OR REPLACE throughout
 
 -- Enable UUID generation
 create extension if not exists "pgcrypto";
 
 -- VEHICLES
-create table vehicles (
+create table if not exists vehicles (
   id uuid primary key default gen_random_uuid(),
   registration_number text unique not null,
   name text not null,
@@ -19,7 +19,7 @@ create table vehicles (
 );
 
 -- DRIVERS
-create table drivers (
+create table if not exists drivers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   license_number text not null,
@@ -33,7 +33,7 @@ create table drivers (
 );
 
 -- TRIPS
-create table trips (
+create table if not exists trips (
   id uuid primary key default gen_random_uuid(),
   source text not null,
   destination text not null,
@@ -51,7 +51,7 @@ create table trips (
 );
 
 -- MAINTENANCE LOGS
-create table maintenance_logs (
+create table if not exists maintenance_logs (
   id uuid primary key default gen_random_uuid(),
   vehicle_id uuid references vehicles(id) not null,
   description text not null,
@@ -63,7 +63,7 @@ create table maintenance_logs (
 );
 
 -- FUEL / EXPENSE LOGS
-create table fuel_logs (
+create table if not exists fuel_logs (
   id uuid primary key default gen_random_uuid(),
   vehicle_id uuid references vehicles(id) not null,
   trip_id uuid references trips(id),
@@ -74,18 +74,31 @@ create table fuel_logs (
   created_at timestamptz default now()
 );
 
--- RLS: enabled but permissive for the hackathon window
+-- RLS: enable on all tables
 alter table vehicles enable row level security;
 alter table drivers enable row level security;
 alter table trips enable row level security;
 alter table maintenance_logs enable row level security;
 alter table fuel_logs enable row level security;
 
-create policy "allow all authenticated" on vehicles for all using (true);
-create policy "allow all authenticated" on drivers for all using (true);
-create policy "allow all authenticated" on trips for all using (true);
-create policy "allow all authenticated" on maintenance_logs for all using (true);
-create policy "allow all authenticated" on fuel_logs for all using (true);
+-- Permissive policies (safe to re-run)
+do $$ begin
+  if not exists (select from pg_policies where tablename='vehicles' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on vehicles for all using (true);
+  end if;
+  if not exists (select from pg_policies where tablename='drivers' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on drivers for all using (true);
+  end if;
+  if not exists (select from pg_policies where tablename='trips' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on trips for all using (true);
+  end if;
+  if not exists (select from pg_policies where tablename='maintenance_logs' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on maintenance_logs for all using (true);
+  end if;
+  if not exists (select from pg_policies where tablename='fuel_logs' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on fuel_logs for all using (true);
+  end if;
+end $$;
 
 -- RPC: atomic dispatch (sets trip + vehicle + driver status together)
 create or replace function dispatch_trip(trip_id uuid)
@@ -164,8 +177,8 @@ begin
 end;
 $$ language plpgsql;
 
--- RBAC (User Profiles)
-create table user_profiles (
+-- USER PROFILES (linked to auth.users)
+create table if not exists user_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   role text not null default 'fleet_manager'
@@ -174,19 +187,24 @@ create table user_profiles (
 );
 
 alter table user_profiles enable row level security;
-create policy "allow all authenticated" on user_profiles for all using (true);
 
--- Trigger to auto-create profile on signup
+do $$ begin
+  if not exists (select from pg_policies where tablename='user_profiles' and policyname='allow all authenticated') then
+    create policy "allow all authenticated" on user_profiles for all using (true);
+  end if;
+end $$;
+
+-- Auto-create profile on user signup
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.user_profiles (id, email, role)
-  values (new.id, new.email, 'fleet_manager'); -- Defaulting to fleet_manager for MVP
+  values (new.id, new.email, 'fleet_manager')
+  on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;
 
--- Drop trigger if exists to allow re-running
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users

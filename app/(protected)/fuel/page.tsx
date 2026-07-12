@@ -1,12 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { Vehicle, FuelLog } from "@/lib/types";
 import { FuelFormDialog } from "./fuel-form-dialog";
-import { getUserRole } from "@/lib/actions/auth";
 
 export default async function FuelPage() {
   const supabase = await createClient();
-  const role = await getUserRole();
-  const isManager = role === "fleet_manager" || role === "financial_analyst";
 
   // Fetch fuel logs joined with vehicles
   const { data: logs, error: logsError } = await supabase
@@ -39,7 +36,7 @@ export default async function FuelPage() {
             Track fuel logs, tolls, and other operational expenses.
           </p>
         </div>
-        {isManager && <FuelFormDialog vehicles={vehicleList} />}
+        <FuelFormDialog vehicles={vehicleList} />
       </div>
 
       <div className="border border-gray-200 rounded-lg overflow-hidden">
