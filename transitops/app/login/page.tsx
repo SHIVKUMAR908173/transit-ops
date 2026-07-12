@@ -120,7 +120,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 placeholder:text-gray-400"
-                placeholder="admin@transitops.com"
+                placeholder="you@company.com"
               />
             </div>
 
