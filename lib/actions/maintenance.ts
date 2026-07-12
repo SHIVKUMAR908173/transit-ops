@@ -14,10 +14,11 @@ export async function openMaintenance(formData: FormData) {
 
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("open_maintenance", {
-    p_vehicle_id: vehicleId,
-    p_description: description,
-    p_cost: cost,
+  const { error } = await supabase.from("maintenance_logs").insert({
+    vehicle_id: vehicleId,
+    description: description,
+    cost: cost,
+    status: "active"
   });
 
   if (error) {
@@ -33,9 +34,7 @@ export async function openMaintenance(formData: FormData) {
 export async function closeMaintenance(logId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("close_maintenance", {
-    log_id: logId,
-  });
+  const { error } = await supabase.from("maintenance_logs").update({ status: "closed" }).eq("id", logId);
 
   if (error) {
     return { error: error.message };

@@ -84,9 +84,7 @@ export async function createTrip(formData: FormData) {
 export async function dispatchTrip(tripId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("dispatch_trip", {
-    trip_id: tripId,
-  });
+  const { error } = await supabase.from("trips").update({ status: "dispatched" }).eq("id", tripId);
 
   if (error) {
     return { error: error.message };
@@ -105,11 +103,11 @@ export async function completeTrip(tripId: string, formData: FormData) {
 
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("complete_trip", {
-    trip_id: tripId,
-    p_actual_distance: actualDistance,
-    p_fuel_consumed: fuelConsumed,
-  });
+  const { error } = await supabase.from("trips").update({ 
+    status: "completed",
+    actual_distance_km: actualDistance,
+    fuel_consumed_l: fuelConsumed
+  }).eq("id", tripId);
 
   if (error) {
     return { error: error.message };
@@ -125,9 +123,7 @@ export async function completeTrip(tripId: string, formData: FormData) {
 export async function cancelTrip(tripId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase.rpc("cancel_trip", {
-    trip_id: tripId,
-  });
+  const { error } = await supabase.from("trips").update({ status: "cancelled" }).eq("id", tripId);
 
   if (error) {
     return { error: error.message };

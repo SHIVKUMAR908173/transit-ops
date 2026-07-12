@@ -82,172 +82,51 @@ transitops/
 
 ## 3. Database Schema
 
-Run this once in the Supabase SQL editor. All tables get a single permissive RLS policy for this build (documented as a known simplification in the PRD).
+Run this once in the Supabase SQL editor (or run the migration file `supabase/migrations/20260712000000_backend_rebuild.sql`). We use Postgres Triggers to enforce business rules natively, avoiding complex RPC calls from the frontend.
 
 ```sql
--- Enable UUID generation
-create extension if not exists "pgcrypto";
+-- ENUMs
+CREATE TYPE user_role AS ENUM ('fleet_manager', 'driver', 'safety_officer', 'financial_analyst');
+CREATE TYPE vehicle_status AS ENUM ('available', 'on_trip', 'in_shop', 'retired');
+CREATE TYPE driver_status AS ENUM ('available', 'on_trip', 'off_duty', 'suspended');
+CREATE TYPE trip_status AS ENUM ('draft', 'dispatched', 'completed', 'cancelled');
+CREATE TYPE maintenance_status AS ENUM ('active', 'closed');
+CREATE TYPE fuel_log_type AS ENUM ('fuel', 'toll', 'misc');
 
--- VEHICLES
-create table vehicles (
-  id uuid primary key default gen_random_uuid(),
-  registration_number text unique not null,
-  name text not null,
-  type text not null,
-  max_load_kg numeric not null,
-  odometer numeric default 0,
-  acquisition_cost numeric,
-  status text not null default 'available'
-    check (status in ('available', 'on_trip', 'in_shop', 'retired')),
-  created_at timestamptz default now()
-);
+-- TABLES (simplified list, see migration for full schema)
+-- vehicles: registration_number, name, type, max_load_kg, odometer, acquisition_cost, status, region
+-- drivers: name, license_number, license_category, license_expiry, contact_number, safety_score, status
+-- trips: source, destination, vehicle_id, driver_id, cargo_weight_kg, planned/actual distance, fuel_consumed_l, revenue, status
+-- maintenance_logs: vehicle_id, description, cost, status
+-- fuel_logs: vehicle_id, trip_id, type, liters, cost, log_date
+-- user_profiles: email, full_name, role
 
--- DRIVERS
-create table drivers (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  license_number text not null,
-  license_category text,
-  license_expiry date not null,
-  contact_number text,
-  safety_score numeric default 100,
-  status text not null default 'available'
-    check (status in ('available', 'on_trip', 'off_duty', 'suspended')),
-  created_at timestamptz default now()
-);
+-- ROW LEVEL SECURITY (RBAC)
+-- RLS is enabled and enforces rules based on `user_profiles.role`:
+-- Fleet Manager: ALL access to all tables.
+-- Driver: SELECT on vehicles/drivers, INSERT on trips, UPDATE on own trips.
+-- Safety Officer: ALL on drivers, SELECT on operational tables.
+-- Financial Analyst: SELECT only on all tables.
 
--- TRIPS
-create table trips (
-  id uuid primary key default gen_random_uuid(),
-  source text not null,
-  destination text not null,
-  vehicle_id uuid references vehicles(id) not null,
-  driver_id uuid references drivers(id) not null,
-  cargo_weight_kg numeric not null,
-  planned_distance_km numeric,
-  actual_distance_km numeric,
-  fuel_consumed_l numeric,
-  status text not null default 'draft'
-    check (status in ('draft', 'dispatched', 'completed', 'cancelled')),
-  created_at timestamptz default now(),
-  completed_at timestamptz
-);
+-- DATABASE TRIGGERS (Enforcing Business Rules)
+-- 1. check_trip_dispatch (BEFORE UPDATE on trips): 
+--    - Ensures cargo_weight_kg <= vehicle.max_load_kg
+--    - Ensures vehicle and driver status = 'available'
+--    - Ensures driver license has not expired
+-- 2. sync_trip_status (AFTER UPDATE on trips):
+--    - Auto-sets vehicle and driver to 'on_trip' when dispatched.
+--    - Auto-sets vehicle and driver to 'available' when completed/cancelled.
+-- 3. sync_maintenance_status (AFTER INSERT/UPDATE on maintenance_logs):
+--    - Auto-sets vehicle to 'in_shop' when active, and 'available' when closed.
 
--- MAINTENANCE LOGS
-create table maintenance_logs (
-  id uuid primary key default gen_random_uuid(),
-  vehicle_id uuid references vehicles(id) not null,
-  description text not null,
-  cost numeric,
-  status text not null default 'active'
-    check (status in ('active', 'closed')),
-  created_at timestamptz default now(),
-  closed_at timestamptz
-);
-
--- FUEL / EXPENSE LOGS (bonus, includes both fuel and misc expenses via `type`)
-create table fuel_logs (
-  id uuid primary key default gen_random_uuid(),
-  vehicle_id uuid references vehicles(id) not null,
-  trip_id uuid references trips(id),
-  type text not null default 'fuel' check (type in ('fuel', 'toll', 'misc')),
-  liters numeric,
-  cost numeric not null,
-  log_date date default current_date
-);
-
--- RLS: enabled but permissive for the hackathon window
-alter table vehicles enable row level security;
-alter table drivers enable row level security;
-alter table trips enable row level security;
-alter table maintenance_logs enable row level security;
-alter table fuel_logs enable row level security;
-
-create policy "allow all authenticated" on vehicles for all using (true);
-create policy "allow all authenticated" on drivers for all using (true);
-create policy "allow all authenticated" on trips for all using (true);
-create policy "allow all authenticated" on maintenance_logs for all using (true);
-create policy "allow all authenticated" on fuel_logs for all using (true);
-
--- RPC: atomic dispatch (sets trip + vehicle + driver status together)
-create or replace function dispatch_trip(trip_id uuid)
-returns void as $$
-declare
-  v_vehicle_id uuid;
-  v_driver_id uuid;
-begin
-  select vehicle_id, driver_id into v_vehicle_id, v_driver_id
-  from trips where id = trip_id;
-
-  update trips set status = 'dispatched' where id = trip_id;
-  update vehicles set status = 'on_trip' where id = v_vehicle_id;
-  update drivers set status = 'on_trip' where id = v_driver_id;
-end;
-$$ language plpgsql;
-
--- RPC: atomic complete
-create or replace function complete_trip(trip_id uuid, p_actual_distance numeric, p_fuel_consumed numeric)
-returns void as $$
-declare
-  v_vehicle_id uuid;
-  v_driver_id uuid;
-begin
-  select vehicle_id, driver_id into v_vehicle_id, v_driver_id
-  from trips where id = trip_id;
-
-  update trips set status = 'completed', actual_distance_km = p_actual_distance,
-    fuel_consumed_l = p_fuel_consumed, completed_at = now() where id = trip_id;
-  update vehicles set status = 'available' where id = v_vehicle_id;
-  update drivers set status = 'available' where id = v_driver_id;
-end;
-$$ language plpgsql;
-
--- RPC: atomic cancel (only valid from dispatched)
-create or replace function cancel_trip(trip_id uuid)
-returns void as $$
-declare
-  v_vehicle_id uuid;
-  v_driver_id uuid;
-begin
-  select vehicle_id, driver_id into v_vehicle_id, v_driver_id
-  from trips where id = trip_id;
-
-  update trips set status = 'cancelled' where id = trip_id;
-  update vehicles set status = 'available' where id = v_vehicle_id;
-  update drivers set status = 'available' where id = v_driver_id;
-end;
-$$ language plpgsql;
-
--- RPC: maintenance open (flips vehicle to in_shop)
-create or replace function open_maintenance(p_vehicle_id uuid, p_description text, p_cost numeric)
-returns void as $$
-begin
-  insert into maintenance_logs (vehicle_id, description, cost)
-  values (p_vehicle_id, p_description, p_cost);
-  update vehicles set status = 'in_shop' where id = p_vehicle_id;
-end;
-$$ language plpgsql;
-
--- RPC: maintenance close (restores to available unless retired)
-create or replace function close_maintenance(log_id uuid)
-returns void as $$
-declare
-  v_vehicle_id uuid;
-  v_current_status text;
-begin
-  select vehicle_id into v_vehicle_id from maintenance_logs where id = log_id;
-  select status into v_current_status from vehicles where id = v_vehicle_id;
-
-  update maintenance_logs set status = 'closed', closed_at = now() where id = log_id;
-
-  if v_current_status != 'retired' then
-    update vehicles set status = 'available' where id = v_vehicle_id;
-  end if;
-end;
-$$ language plpgsql;
+-- COMPUTED VIEWS
+-- v_vehicle_operational_costs: Sums maintenance, fuel, and misc expenses per vehicle.
+-- v_fleet_fuel_efficiency: Total distance / total fuel across completed trips.
+-- v_fleet_utilization: (on_trip vehicles / total active vehicles) * 100.
+-- get_vehicle_roi(v_id): RPC to calculate ((revenue - operational_costs) / acquisition_cost) * 100.
 ```
 
-**Why RPC functions and not three sequential `.update()` calls from React:** each function runs as one Postgres transaction. If it fails partway, everything rolls back, you never end up with a vehicle stuck On Trip while its driver already reverted. This is the single piece of SQL in the whole build that isn't boilerplate CRUD, budget real time for it.
+**Why Triggers instead of RPCs from React:** By enforcing these rules at the database level via triggers, any API call to simply `UPDATE trips SET status = 'dispatched'` will safely execute all state transitions and block invalid requests (e.g. overloaded vehicles). This creates an impenetrable backend that holds up even if called directly via API.
 
 ## 4. API Routes
 
@@ -264,11 +143,11 @@ No REST API routes are used. All reads happen via the Supabase JS client directl
 | `getAvailableVehicles()` | Server read | none | `Vehicle[]` where `status = 'available'` |
 | `getAvailableDrivers()` | Server read | none | `Driver[]` where `status = 'available' AND license_expiry > today` |
 | `createTrip(data)` | Server Action | source, destination, vehicle_id, driver_id, cargo_weight_kg, planned_distance_km | `{ success: true, tripId }` or `{ error: string }` if cargo exceeds capacity |
-| `dispatchTrip(tripId)` | Server Action → calls `dispatch_trip` RPC | `{ tripId: string }` | `{ success: true }` |
-| `completeTrip(tripId, actualDistance, fuelConsumed)` | Server Action → calls `complete_trip` RPC | trip id + numbers | `{ success: true }` |
-| `cancelTrip(tripId)` | Server Action → calls `cancel_trip` RPC | `{ tripId: string }` | `{ success: true }` |
-| `openMaintenance(vehicleId, description, cost)` | Server Action → calls `open_maintenance` RPC | fields | `{ success: true }` |
-| `closeMaintenance(logId)` | Server Action → calls `close_maintenance` RPC | `{ logId: string }` | `{ success: true }` |
+| `dispatchTrip(tripId)` | Server Action → direct UPDATE on trips (trigger handles state transition) | `{ tripId: string }` | `{ success: true }` |
+| `completeTrip(tripId, actualDistance, fuelConsumed)` | Server Action → direct UPDATE on trips (trigger handles state transition) | trip id + numbers | `{ success: true }` |
+| `cancelTrip(tripId)` | Server Action → direct UPDATE on trips (trigger handles state transition) | `{ tripId: string }` | `{ success: true }` |
+| `openMaintenance(vehicleId, description, cost)` | Server Action → direct INSERT on maintenance_logs (trigger updates vehicle) | fields | `{ success: true }` |
+| `closeMaintenance(logId)` | Server Action → direct UPDATE on maintenance_logs (trigger updates vehicle) | `{ logId: string }` | `{ success: true }` |
 
 ## 5. Auth Flow
 

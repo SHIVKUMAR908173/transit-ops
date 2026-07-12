@@ -41,10 +41,12 @@ transitops/
 ```
 No `/api` routes. All mutations go through Server Actions in `lib/actions/*.ts`, all reads happen directly in Server Components via the Supabase client.
 
-## Database Tables (NOT YET CREATED)
-Schema exists in `supabase/schema.sql`, needs to be run in Supabase SQL editor. Tables: `vehicles`, `drivers`, `trips`, `maintenance_logs`, `fuel_logs`. Plus 5 RPC functions: `dispatch_trip`, `complete_trip`, `cancel_trip`, `open_maintenance`, `close_maintenance`. RLS enabled with permissive `USING (true)` policy.
+## Database Tables
+Schema exists in `supabase/migrations/20260712000000_backend_rebuild.sql`. Needs to be run in Supabase SQL editor or via Supabase CLI. 
+Tables: `vehicles`, `drivers`, `trips`, `maintenance_logs`, `fuel_logs`, `user_profiles`.
+Business rules are enforced via **Postgres Triggers** (no RPC functions for state transitions). RLS is fully enabled and respects `user_profiles.role` (Fleet Manager, Driver, Safety Officer, Financial Analyst). Computed metrics are handled via Views (e.g., `v_vehicle_operational_costs`, `v_fleet_fuel_efficiency`, `v_fleet_utilization`).
 
-Key columns to remember:
+Key ENUMs to remember (strictly lowercase):
 - `vehicles.status`: available / on_trip / in_shop / retired
 - `drivers.status`: available / on_trip / off_duty / suspended
 - `trips.status`: draft / dispatched / completed / cancelled
@@ -68,7 +70,7 @@ Waiting for user approval to begin implementing the missing high-priority PRD fe
 ## Do Not Touch
 - `lib/supabase/client.ts` / `server.ts` — auth wiring follows Supabase SSR docs exactly.
 - `proxy.ts` — redirect logic matches Next 16 conventions, function named `proxy`.
-- `supabase/schema.sql` — do not regenerate. Run as-is in Supabase SQL editor.
+- `supabase/migrations/20260712000000_backend_rebuild.sql` — Run as-is in Supabase SQL editor.
 
 ## Design Rules (non-negotiable)
 - White surfaces, gray-900 text, gray-200 hairline borders, no shadows heavier than a 1px border. No gradients, no glassmorphism.
