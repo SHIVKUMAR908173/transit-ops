@@ -1,0 +1,81 @@
+# PROJECT CONTEXT: TransitOps
+
+## What We're Building
+TransitOps is a fleet operations platform, vehicle/driver registry, trip dispatch, and maintenance tracking, that enforces business rules automatically (no double-booked vehicles, no expired-license dispatches, no cargo over capacity) instead of relying on a human to catch mistakes. Built in an 8-hour hackathon window, MVP scope only, see Out of Scope below before suggesting anything new.
+
+## Stack (exact)
+- Next.js 16.2.10 App Router, TypeScript
+- TailwindCSS v4 + shadcn/ui (Base library, Nova preset)
+- Zod v4.4.3 (note: NOT Zod 3, API differs — use `.issues` not `.errors`, no `invalid_type_error` param)
+- Supabase (URL: `https://jjvnnewoiupnrvupmugd.supabase.co`, anon key in `.env.local`)
+- Next 16 uses `proxy.ts` instead of `middleware.ts` — function must be named `proxy` not `middleware`
+- Deployed on Vercel at: `[NOT YET DEPLOYED]`
+
+## Folder Structure
+```
+transitops/
+├── app/
+│   ├── login/page.tsx
+│   ├── (protected)/
+│   │   ├── layout.tsx              # session check, redirects to /login
+│   │   ├── dashboard/page.tsx
+│   │   ├── vehicles/{page.tsx, vehicle-form-dialog.tsx}
+│   │   ├── drivers/{page.tsx, driver-form-dialog.tsx}
+│   │   ├── trips/{page.tsx, trip-form-dialog.tsx, trip-actions.tsx}
+│   │   └── maintenance/{page.tsx, maintenance-form-dialog.tsx, maintenance-actions.tsx}
+│   ├── layout.tsx
+│   ├── page.tsx                    # redirects to /dashboard
+│   └── globals.css
+├── components/
+│   ├── ui/                         # shadcn primitives (button, card, table, dialog, input, label, select, badge, skeleton, separator, dropdown-menu)
+│   ├── nav-sidebar.tsx
+│   ├── kpi-card.tsx
+│   └── status-badge.tsx
+├── lib/
+│   ├── supabase/{client.ts, server.ts}
+│   ├── actions/{vehicles.ts, drivers.ts, trips.ts, maintenance.ts, auth.ts}
+│   ├── validations/{vehicle.ts, driver.ts, trip.ts}
+│   └── types.ts
+├── supabase/schema.sql
+└── proxy.ts                        # Next 16 proxy (was middleware.ts)
+```
+No `/api` routes. All mutations go through Server Actions in `lib/actions/*.ts`, all reads happen directly in Server Components via the Supabase client.
+
+## Database Tables (NOT YET CREATED)
+Schema exists in `supabase/schema.sql`, needs to be run in Supabase SQL editor. Tables: `vehicles`, `drivers`, `trips`, `maintenance_logs`, `fuel_logs`. Plus 5 RPC functions: `dispatch_trip`, `complete_trip`, `cancel_trip`, `open_maintenance`, `close_maintenance`. RLS enabled with permissive `USING (true)` policy.
+
+Key columns to remember:
+- `vehicles.status`: available / on_trip / in_shop / retired
+- `drivers.status`: available / on_trip / off_duty / suspended
+- `trips.status`: draft / dispatched / completed / cancelled
+
+## Current Status
+- Done: All code files for Phases 0–4 created ✅
+- Build passes: TypeScript compilation + Next.js build successful ✅
+- Done: Schema setup and test user creation in Supabase ✅
+- Tested end-to-end: all CRUD flows, dispatch engine, dashboard KPIs verified ✅
+- Not started: Vercel deployment and GitHub pushing (Phase 6)
+
+## Active Task
+The end-to-end test flow is complete and all core requirements are verified working locally on port 3000. Next step is pushing to GitHub and deploying to Vercel.
+
+## Do Not Touch
+- `lib/supabase/client.ts` / `server.ts` — auth wiring follows Supabase SSR docs exactly.
+- `proxy.ts` — redirect logic matches Next 16 conventions, function named `proxy`.
+- `supabase/schema.sql` — do not regenerate. Run as-is in Supabase SQL editor.
+
+## Design Rules (non-negotiable)
+- White surfaces, gray-900 text, gray-200 hairline borders, no shadows heavier than a 1px border. No gradients, no glassmorphism.
+- Exactly one accent color, emerald, and it means one thing only: "available / good." Amber = in-transit/transitional state. Red = blocked/bad state (suspended, in shop, expired). Never introduce a second "positive" color.
+- Status badges are pill-shaped (`rounded-full`), color-mapped per DESIGN.md §4, used consistently everywhere a status appears.
+- Sidebar nav stays fixed `w-56`, active item is a solid black (`bg-gray-900 text-white`) pill.
+- No animation beyond shadcn's default dialog fade and simple `transition-colors` on hover.
+
+## Key Gotchas for Next Session
+1. **Zod v4 not v3**: `.safeParse()` returns `{ success, data, error }` where error has `.issues` (not `.errors`). No `invalid_type_error` param on `z.number()`.
+2. **Next.js 16 proxy**: File must be `proxy.ts`, exported function must be named `proxy`, not `middleware`.
+3. **Tailwind v4**: Uses `@import "tailwindcss"` syntax, CSS vars use `oklch()`.
+4. **shadcn Base library**: Uses `@base-ui/react` instead of Radix — component APIs may differ slightly.
+
+## Definition of Done for This Session
+Schema runs in Supabase, test user created, full end-to-end test of: login → dashboard → add vehicle → add driver → create trip → dispatch → verify double-booking blocked → complete trip → open maintenance → close maintenance → dashboard KPIs update.
